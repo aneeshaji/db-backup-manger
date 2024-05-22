@@ -43,8 +43,12 @@ class TestCron extends Command
             File::makeDirectory($storageAt, 0755, true, true);
         }
 
-        $command1 = sprintf('C:\xampp\mysql\bin\mysqldump %s -u root -p > %s', $schema1, $storageAt.$filename);
-
+        $env = env('APP_ENV');
+        if ($env == 'local') {
+            $command1 = sprintf('C:\xampp\mysql\bin\mysqldump %s -u root -p > %s', $schema1, $storageAt.$filename);
+        } else {
+            $command1 = sprintf('mysqldump %s -u root -proot > %s', $schema1, $storageAt.$filename);
+        }
         $returnVar = NULL;
         $output = NULL;
         exec($command1, $output, $returnVar);
@@ -55,7 +59,6 @@ class TestCron extends Command
         // Upload backup file to AWS S3 Bucket 
         $backupFilePath = $storageAt . $filename;
         $s3Uploadpath = "/db-backups/".Carbon::now()->format('Y').'/'. $filename;
-        //dd($filename);
         if (File::exists($backupFilePath)) {
             Storage::disk('s3')->put($s3Uploadpath, file_get_contents($backupFilePath), 'public');
             $urlPath = Storage::disk('s3')->url($s3Uploadpath);
@@ -72,7 +75,7 @@ class TestCron extends Command
      *
      * @var array
      */
-    public function createFileObject($url){
+    public function createFileObject($url) {
   
         $path_parts = pathinfo($url);
         $newPath = $path_parts['dirname'] . '/tmp-files/';
