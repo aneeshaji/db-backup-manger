@@ -26,15 +26,15 @@ class TestCron extends Command
      * @var string
      */
     protected $description = 'Command description';
-  
+    
     /**
-     * Execute the console command.
+     * Function for creating database backup.
+     *
+     * @var array
      */
-    public function handle()
+    public function createDatabasebackup($database, $user, $password) 
     {
-        info("Cron Job running at ". now());
-        $schema1 = 'gmmso';
-        $password = '';
+        info("Database backup cron job started at ". now());
         $filename = "backup-" .Str::random(4).'-'. Carbon::now()->format('Y-m-d') . ".sql";
         // Create backup folder and set permission if not exist.
         $storageAt = storage_path() . "/db-backups/".Carbon::now()->format('Y').'/';
@@ -45,29 +45,49 @@ class TestCron extends Command
 
         $env = env('APP_ENV');
         if ($env == 'local') {
-            $command1 = sprintf('C:\xampp\mysql\bin\mysqldump %s -u root -p > %s', $schema1, $storageAt.$filename);
+            $command1 = sprintf('C:\xampp\mysql\bin\mysqldump %s -u %s -p%s> %s', $database, $user, $password, $storageAt.$filename);
         } else {
-            $command1 = sprintf('mysqldump %s -u root -proot > %s', $schema1, $storageAt.$filename);
+            $command1 = sprintf('mysqldump %s -u %s -p%s > %s', $database, $user, $password, $storageAt.$filename);
         }
         $returnVar = NULL;
         $output = NULL;
         exec($command1, $output, $returnVar);
-
-        // Creating file object
-        //$fileObject = $this->createFileObject($storageAt);
-
-        // Upload backup file to AWS S3 Bucket 
-        $backupFilePath = $storageAt . $filename;
-        $s3Uploadpath = "/db-backups/".Carbon::now()->format('Y').'/'. $filename;
-        if (File::exists($backupFilePath)) {
-            Storage::disk('s3')->put($s3Uploadpath, file_get_contents($backupFilePath), 'public');
-            $urlPath = Storage::disk('s3')->url($s3Uploadpath);
-            if ($urlPath) {
-                info("Cron Job completed at ". now());
-            } else {
-                info("Error");
+        
+        if ($returnVar == 0) {
+            info("Mysqldump process completed at ". now());
+            // Upload backup file to AWS S3 Bucket 
+            $backupFilePath = $storageAt . $filename;
+            $s3Uploadpath = "/db-backups/".Carbon::now()->format('Y').'/'. $filename;
+            if (File::exists($backupFilePath)) {
+                Storage::disk('s3')->put($s3Uploadpath, file_get_contents($backupFilePath), 'public');
+                $urlPath = Storage::disk('s3')->url($s3Uploadpath);
+                if ($urlPath) {
+                    info("Cron Job completed at ". now());
+                } else {
+                    info("Cron job encountered an error at ", now());
+                }
             }
+        } else {
+            info("Mysqldump process encountered a problem at ". now());
         }
+    } 
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        // For First Database
+        $database_1 = env('BACKUP_1_DATABASE');
+        $user_1 = env('BACKUP_1_USER');
+        $password_1 = env('BACKUP_1_PASSWORD');
+        $this->createDatabasebackup($database_1, $user_1, $password_1);
+
+        // For second Database
+        $database_2 = env('BACKUP_2_DATABASE');
+        $user_2 = env('BACKUP_2_USER');
+        $password_2 = env('BACKUP_2_PASSWORD');
+        $this->createDatabasebackup($database_2, $user_2, $password_2);
     }
 
     /**
