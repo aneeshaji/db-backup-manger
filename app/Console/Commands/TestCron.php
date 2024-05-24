@@ -35,7 +35,7 @@ class TestCron extends Command
     public function createDatabasebackup($database, $user, $password) 
     {
         info("Database backup cron job started at ". now());
-        $filename = "backup-" .Str::random(4).'-'. Carbon::now()->format('Y-m-d') . ".sql";
+        $filename = "backup-" .$database.'-'.Str::random(4).'-'. Carbon::now()->format('Y-m-d') . ".sql";
         // Create backup folder and set permission if not exist.
         $storageAt = storage_path() . "/db-backups/".Carbon::now()->format('Y').'/';
 
