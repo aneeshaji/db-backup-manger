@@ -81,13 +81,17 @@ class TestCron extends Command
         $database_1 = env('BACKUP_1_DATABASE');
         $user_1 = env('BACKUP_1_USER');
         $password_1 = env('BACKUP_1_PASSWORD');
-        $this->createDatabasebackup($database_1, $user_1, $password_1);
+        if ($database_1 != null && $user_1 != null) {
+            $this->createDatabasebackup($database_1, $user_1, $password_1);
+        }
 
         // For second Database
         $database_2 = env('BACKUP_2_DATABASE');
         $user_2 = env('BACKUP_2_USER');
         $password_2 = env('BACKUP_2_PASSWORD');
-        $this->createDatabasebackup($database_2, $user_2, $password_2);
+        if ($database_2 != null && $user_2 != null) {
+            $this->createDatabasebackup($database_2, $user_2, $password_2);
+        }
     }
 
     /**
